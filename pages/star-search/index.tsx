@@ -1,7 +1,7 @@
 import { GetServerSidePropsContext } from "next";
 import { createPagesServerClient } from "@supabase/auth-helpers-nextjs";
 import { MdOutlineSubdirectoryArrowRight } from "react-icons/md";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
 import Markdown from "react-markdown";
@@ -37,7 +37,7 @@ const SUGGESTIONS = [
   },
 ];
 
-type SuggesionTypes = (typeof SUGGESTIONS)[number];
+type SuggesionType = (typeof SUGGESTIONS)[number];
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   const supabase = createPagesServerClient(context);
@@ -240,7 +240,7 @@ export default function StarSearchPage({ userId, bearerToken, ogImageUrl }: Star
         image={ogImageUrl}
         twitterCard="summary_large_image"
       />
-      <ProfileLayout>
+      <ProfileLayout includeFooter={false}>
         <div className="relative -mt-1.5 flex flex-col p-4 lg:p-8 justify-between items-center w-full h-full grow bg-slate-50">
           {renderState()}
           <div className="absolute inset-x-0 bottom-2 flex flex-col gap-4 items-center w-full px-2">
@@ -265,7 +265,7 @@ export default function StarSearchPage({ userId, bearerToken, ogImageUrl }: Star
                   {!showSuggestions && (
                     <button
                       onClick={() => setShowSuggestions(!showSuggestions)}
-                      className="z-30 mx-auto w-fit flex gap-1 shadow-xs items-center text-slate-700 font-medium bg-slate-100 !border-2 !border-slate-300 px-4 py-1 rounded-full"
+                      className="z-30 mx-auto w-fit flex gap-1 shadow-xs items-center text-slate-700 font-medium bg-slate-100 border-2 border-slate-300 px-4 py-1 rounded-full"
                     >
                       Need inspiration?
                       <BsArrowUpShort className="text-2xl" />
@@ -273,7 +273,29 @@ export default function StarSearchPage({ userId, bearerToken, ogImageUrl }: Star
                   )}
                 </>
               ))}
-            <StarSearchInput ref={inputRef} isRunning={isRunning} onSubmitPrompt={submitPrompt} />
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                const form = event.currentTarget;
+                const formData = new FormData(form);
+                submitPrompt(formData.get("prompt") as string);
+                form.reset();
+              }}
+              className="mx-0.5 lg:mx-auto lg:max-w-3xl px-1 py-[3px] rounded-xl bg-gradient-to-r from-sauced-orange via-amber-400 to-sauced-orange w-full bg-white h-fit flex"
+            >
+              <input
+                required
+                type="text"
+                name="prompt"
+                ref={inputRef}
+                disabled={isRunning}
+                placeholder="Ask a question"
+                className="p-4 border bg-white focus:outline-none grow rounded-l-lg border-none"
+              />
+              <button type="submit" disabled={isRunning} className="bg-white p-2 rounded-r-lg">
+                <MdOutlineSubdirectoryArrowRight className="rounded-lg w-10 h-10 p-2 bg-light-orange-3 text-light-orange-10" />
+              </button>
+            </form>
           </div>
           <div className="absolute inset-x-0 top-0 z-0 h-[125px] w-full translate-y-[-100%] lg:translate-y-[-50%] rounded-full bg-gradient-to-r from-light-red-10 via-sauced-orange to-amber-400 opacity-40 blur-[40px]"></div>
         </div>
@@ -303,7 +325,7 @@ function SuggestionBoxes({
 }: {
   addPromptInput: (prompt: string) => void;
   isHorizontal?: boolean;
-  suggestions: SuggesionTypes[];
+  suggestions: SuggesionType[];
 }) {
   return (
     <div
@@ -365,39 +387,3 @@ function Chatbox({ author, content, userId }: StarSearchChat & { userId?: number
     </li>
   );
 }
-
-const StarSearchInput = forwardRef<
-  HTMLInputElement,
-  {
-    isRunning: boolean;
-    onSubmitPrompt: (prompt: string) => void;
-  }
->(function StarSearchInput({ isRunning, onSubmitPrompt }, ref) {
-  return (
-    <section className="mx-0.5 lg:mx-auto w-full lg:max-w-3xl px-1 py-[3px] rounded-xl bg-gradient-to-r from-sauced-orange via-amber-400 to-sauced-orange">
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const form = event.currentTarget;
-          const formData = new FormData(form);
-          onSubmitPrompt(formData.get("prompt") as string);
-          form.reset();
-        }}
-        className="w-full bg-white h-fit flex justify-between rounded-lg"
-      >
-        <input
-          required
-          type="text"
-          name="prompt"
-          ref={ref}
-          disabled={isRunning}
-          placeholder="Ask a question"
-          className="p-4 border bg-white focus:outline-none grow rounded-l-lg border-none"
-        />
-        <button type="submit" disabled={isRunning} className="bg-white p-2 rounded-r-lg">
-          <MdOutlineSubdirectoryArrowRight className="rounded-lg w-10 h-10 p-2 bg-light-orange-3 text-light-orange-10" />
-        </button>
-      </form>
-    </section>
-  );
-});
